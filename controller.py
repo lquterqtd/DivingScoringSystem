@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from model import Match, Player, Referee, Score
 from sqlalchemy import desc, asc
+from sqlalchemy import func
 
 def add_test_data():
     """
@@ -137,6 +138,10 @@ def connectToDatabase():
     return session
 
 def add_match(match_name):
+    """
+    增加一场比赛
+    match_name : 比赛名称，暂时未限定长度，不允许重复
+    """
     session = connectToDatabase()
     match = Match()
     match.name = match_name
@@ -145,19 +150,62 @@ def add_match(match_name):
     session.close()
 
 def get_all_matches():
+    """
+    获取所有比赛列表
+    """
     session = connectToDatabase()
     qry = session.query(Match).order_by(Match.create_time).all()
     session.close()
     return qry
 
 def get_all_players():
+    """
+    获取所有选手列表
+    """
     session = connectToDatabase()
     qry = session.query(Player).order_by(Player.name).all()
     session.close()
     return qry
 
 def get_all_referees():
+    """
+    获取所有裁判列表
+    """
     session = connectToDatabase()
     qry = session.query(Referee).order_by(Referee.name).all()
     session.close()
     return qry
+
+def get_single_round_score(match_id, player_id, round):
+    """
+    获取某名选手在某场比赛某轮的得分
+    """
+    session = connectToDatabase()
+    qry = session.query(Score).filter(Score.match_id == match_id).filter(Score.player_id == player_id).filter(Score.round == round).one()
+    session.close()
+    return qry.r_score
+
+def get_single_match_score(match_id, player_id):
+    """
+    获取某个选手在某场比赛中的总得分（计算已经获得的分数）
+    """
+    session = connectToDatabase()
+    qry = session.query(Score).filter(Score.match_id == match_id).filter(Score.player_id == player_id)
+    session.close()
+    score_sum = 0.0
+    for i in qry:
+        score_sum += i.r_score
+    return score_sum
+
+def get_player_all_rounds_score_list(match_id, player_id):
+    """
+    获取某个选手在某场比赛中的得分列表（按轮次顺序排序的）
+    """
+    session = connectToDatabase()
+    qry = session.query(Score).filter(Score.match_id == match_id).filter(Score.player_id == player_id).order_by(asc(Score.round))
+    session.close()
+    score_list = []
+    for i in qry:
+        score_list.append(i.r_score)
+    return score_list
+
