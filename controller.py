@@ -224,10 +224,16 @@ def get_player_all_rounds_score_list(match_id, player_id):
     return score_list
 
 def get_player_total_round(match_id, player_id):
+    """
+    获取选手在某场比赛中已经进行了几跳
+    """
     session = connectToDatabase()
-    qry = session.query(func.count(Score)).filter(Score.match_id == match_id).filter(Score.player_id == player_id)
+    qry = session.query(Score).filter(Score.match_id == match_id).filter(Score.player_id == player_id)
     session.close()
-    return qry
+    count = 0
+    for i in qry:
+        count += 1
+    return count
 
 def get_player_by_id(player_id):
     session = connectToDatabase()
@@ -240,4 +246,17 @@ def get_referee_by_id(referee_id):
     qry = session.query(Referee).filter(Referee.id == referee_id).one()
     session.close()
     return qry
+
+def add_player_score(match_id, c_round, player_id, r_score):
+    session = connectToDatabase()
+    player_score = Score()
+    player_score.match_id = match_id
+    player_score.round = c_round
+    player_score.player_id = player_id
+    player_score.r_score = r_score
+    session.add(player_score)
+    session.commit()
+    session.close()
+
+
 

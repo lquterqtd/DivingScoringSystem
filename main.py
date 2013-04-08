@@ -4,7 +4,8 @@ import wx
 from mydialog import AddMatchDialog, OpenMatchDialog
 from calculate_score import calculate_score
 from ObjectListView import ObjectListView, ColumnDefn
-from controller import get_player_by_id, get_referee_by_id, get_player_all_rounds_score_list
+from controller import get_player_by_id, get_referee_by_id, get_player_all_rounds_score_list, get_player_total_round, add_player_score
+import sys
 
 
 class ResultColumnData(object):
@@ -92,22 +93,18 @@ class MainFrame(wx.Frame):
         self.round_score.SetFont(font)
 
         result_box = wx.StaticBox(self.panel, -1, u"计分板", size=(760, 350), pos=(10, 170))
-        self.result_data_olv = ObjectListView(self, style=wx.LC_REPORT|wx.SUNKEN_BORDER, sortable=False, size=(730, 300),  pos=(25, 190))
-        self.result_data_olv.SetColumns(
-            [
-                ColumnDefn(u"选手", 'centre', 100, "name"),
-                ColumnDefn(u"第一跳得分", 'centre', 90, "s_1"),
-                ColumnDefn(u"第二跳得分", 'centre', 90, "s_2"),
-                ColumnDefn(u"第三跳得分", 'centre', 90, "s_3"),
-                ColumnDefn(u"第四跳得分", 'centre', 90, "s_4"),
-                ColumnDefn(u"第五跳得分", 'centre', 90, "s_5"),
-                ColumnDefn(u"第六跳得分", 'centre', 90, "s_6"),
-                ColumnDefn(u"总分", 'centre', 90, "s_total"),
-            ]
-        )
 
         self.result_data = []
-        self.result_data_olv.SetEmptyListMsg(u"请创建一场比赛或者打开已有的比赛")
+        self.result_data_listview = wx.ListView(self.panel, -1, style=wx.LC_REPORT, size=(730, 300), pos=(25, 195))
+        self.result_data_listview.InsertColumn(0, u'姓名', width=80, format=wx.LIST_FORMAT_CENTRE)
+        self.result_data_listview.InsertColumn(1, u'第一跳得分', width=90, format=wx.LIST_FORMAT_CENTRE)
+        self.result_data_listview.InsertColumn(2, u'第二跳得分', width=90, format=wx.LIST_FORMAT_CENTRE)
+        self.result_data_listview.InsertColumn(3, u'第三跳得分', width=90, format=wx.LIST_FORMAT_CENTRE)
+        self.result_data_listview.InsertColumn(4, u'第四跳得分', width=90, format=wx.LIST_FORMAT_CENTRE)
+        self.result_data_listview.InsertColumn(5, u'第五跳得分', width=90, format=wx.LIST_FORMAT_CENTRE)
+        self.result_data_listview.InsertColumn(6, u'第六跳得分', width=90, format=wx.LIST_FORMAT_CENTRE)
+        self.result_data_listview.InsertColumn(7, u'总分', width=90, format=wx.LIST_FORMAT_CENTRE)
+
     def OnNewMatch(self, event):
         #wx.MessageBox(u"开始一场新的比赛")
         dlg = AddMatchDialog(self)
@@ -137,6 +134,11 @@ class MainFrame(wx.Frame):
         index = self.select_player.GetSelection()
         if index == wx.NOT_FOUND:
             wx.MessageBox(u"请选择一名选手")
+            return
+        player_id = self.select_player.GetClientData(self.select_player.GetSelection())
+        which_round = get_player_total_round(self.match_id, player_id)
+        if which_round == 6:
+            wx.MessageBox(u"%s的比赛已经结束" % self.select_player.GetStringSelection())
             return
         difficulty =self.difficulty_text.GetValue().strip()
         if difficulty == "":
@@ -177,6 +179,9 @@ class MainFrame(wx.Frame):
             )
             self.round_score.SetLabel(res['expression'])
 
+        add_player_score(self.match_id, which_round, player_id, res["final_score"])
+        self.fill_list_view()
+
     def load_show_data(self):
         self.select_player.Clear()
         for p in self.player_list:
@@ -187,9 +192,12 @@ class MainFrame(wx.Frame):
             referee_info = get_referee_by_id(r)
             self.s_label_list[index].SetLabel(referee_info.name)
             index += 1
-        self.result_data_olv.ClearAll()
+        self.fill_list_view()
+
+    def fill_list_view(self):
         del self.result_data[:]
-        #开始构造填充objectlistview的数据对象
+        self.result_data_listview.DeleteAllItems()
+        #开始构造填充listview的数据对象
         for p in self.player_list:
             player_info = get_player_by_id(p)
             score_list_per_round = get_player_all_rounds_score_list(self.match_id, p)
@@ -206,13 +214,20 @@ class MainFrame(wx.Frame):
                 get_show_score(score_list_per_round[3]),
                 get_show_score(score_list_per_round[4]),
                 get_show_score(score_list_per_round[5]),
-                total_score
+                get_show_score(total_score)
             )
             self.result_data.append(obj)
-        self.result_data_olv.SetObjects(self.result_data)
-
-    def format_result_data(self):
-        pass
+        self.result_data = sorted(self.result_data, key=lambda ResultColumnData:float(ResultColumnData.s_total))
+        self.result_data.reverse()
+        for obj in self.result_data:
+            index = self.result_data_listview.InsertStringItem(sys.maxint, obj.name)
+            self.result_data_listview.SetStringItem(index, 1, obj.s_1)
+            self.result_data_listview.SetStringItem(index, 2, obj.s_2)
+            self.result_data_listview.SetStringItem(index, 3, obj.s_3)
+            self.result_data_listview.SetStringItem(index, 4, obj.s_4)
+            self.result_data_listview.SetStringItem(index, 5, obj.s_5)
+            self.result_data_listview.SetStringItem(index, 6, obj.s_6)
+            self.result_data_listview.SetStringItem(index, 7, obj.s_total)
 
 class GenApp(wx.App):
         def __init__(self, redirect=False, filename=None):
