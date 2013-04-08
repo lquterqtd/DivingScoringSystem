@@ -1,8 +1,29 @@
 __author__ = 'Administrator'
 #coding:utf-8
 import wx
-from mydialog import AddMatchDialog
+from mydialog import AddMatchDialog, OpenMatchDialog
+from calculate_score import calculate_score
+from ObjectListView import ObjectListView, ColumnDefn
+from controller import get_player_by_id, get_referee_by_id, get_player_all_rounds_score_list
 
+
+class ResultColumnData(object):
+    def __init__(self, id, name, s_1, s_2, s_3, s_4, s_5, s_6, s_total):
+        self.id = id
+        self.name = name
+        self.s_1 = s_1
+        self.s_2 = s_2
+        self.s_3 = s_3
+        self.s_4 = s_4
+        self.s_5 = s_5
+        self.s_6 = s_6
+        self.s_total = s_total
+
+def get_show_score(score):
+    if score == None:
+        return ""
+    else:
+        return "%.1f" % score
 
 class MainPanel(wx.Panel):
     def __init__(self, parent):
@@ -11,10 +32,14 @@ class MainPanel(wx.Panel):
 class MainFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
-                          title=u"跳水打分系统", size=(800,600))
-        panel = MainPanel(self)
+            title=u"跳水打分系统", size=(800,600))
+        self.panel = MainPanel(self)
         self.icon = wx.Icon('diving.ico', wx.BITMAP_TYPE_ICO)
         self.SetIcon(self.icon)
+
+        self.SetMaxSize(wx.Size(800, 600))
+        self.SetMinSize(wx.Size(800, 600))
+
         menuBar = wx.MenuBar()
         start_menu = wx.Menu()
         new_match = start_menu.Append(-1, u"开始一场新的比赛\tCtrl-N")
@@ -39,6 +64,50 @@ class MainFrame(wx.Frame):
             ]
         )
         self.SetAcceleratorTable(acceltbl)
+
+        select_player_box = wx.StaticBox(self.panel, -1, u"选择出场选手", size=(150, 70), pos=(10, 10))
+        self.select_player = wx.Choice(self.panel, -1, choices=[], pos=(25, 40))
+
+        difficulty_box = wx.StaticBox(self.panel, -1, u"指定难度系数", size=(150, 70), pos=(10, 90))
+        self.difficulty_text = wx.TextCtrl(self.panel, -1, pos=(25, 120))
+
+        scores_box = wx.StaticBox(self.panel, -1, u"各裁判给分", size=(600, 150), pos=(170, 10))
+        x_offset = 180
+        y_offset = 50
+        count = 0
+        self.s_text_list = []
+        self.s_label_list = []
+        for i in xrange(0, 7):
+            referee_name = wx.StaticText(self.panel, -1, u"", size=(50 , 20), pos=(x_offset + 90 * count, y_offset), style=wx.ALIGN_CENTER)
+            self.s_label_list.append(referee_name)
+            scores_text = wx.TextCtrl(self.panel, -1, size=(45, 20), pos=(x_offset + 90 * count, 80))
+            self.s_text_list.append(scores_text)
+            count += 1
+
+        calc_btn = wx.Button(self.panel, -1, u"计算此跳得分", pos=(200, 120))
+        self.Bind(wx.EVT_BUTTON, self.CalcScore, calc_btn)
+
+        font = wx.Font(18, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        self.round_score = wx.StaticText(self.panel, -1, u"", size=(200, 30), pos=(350, 115))
+        self.round_score.SetFont(font)
+
+        result_box = wx.StaticBox(self.panel, -1, u"计分板", size=(760, 350), pos=(10, 170))
+        self.result_data_olv = ObjectListView(self, style=wx.LC_REPORT|wx.SUNKEN_BORDER, sortable=False, size=(730, 300),  pos=(25, 190))
+        self.result_data_olv.SetColumns(
+            [
+                ColumnDefn(u"选手", 'centre', 100, "name"),
+                ColumnDefn(u"第一跳得分", 'centre', 90, "s_1"),
+                ColumnDefn(u"第二跳得分", 'centre', 90, "s_2"),
+                ColumnDefn(u"第三跳得分", 'centre', 90, "s_3"),
+                ColumnDefn(u"第四跳得分", 'centre', 90, "s_4"),
+                ColumnDefn(u"第五跳得分", 'centre', 90, "s_5"),
+                ColumnDefn(u"第六跳得分", 'centre', 90, "s_6"),
+                ColumnDefn(u"总分", 'centre', 90, "s_total"),
+            ]
+        )
+
+        self.result_data = []
+        self.result_data_olv.SetEmptyListMsg(u"请创建一场比赛或者打开已有的比赛")
     def OnNewMatch(self, event):
         #wx.MessageBox(u"开始一场新的比赛")
         dlg = AddMatchDialog(self)
@@ -46,20 +115,114 @@ class MainFrame(wx.Frame):
         dlg.Destroy()
 
     def OnOpenMatch(self, event):
-        wx.MessageBox(u"打开已有的比赛")
+        dlg = OpenMatchDialog(self)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def OnAbout(self, event):
         wx.MessageBox(u"这是一个跳水打分系统的Demo版本")
 
-class GenApp(wx.App):
-    def __init__(self, redirect=False, filename=None):
-        wx.App.__init__(self, redirect, filename)
+    def SetMatchId(self, match_id):
+        self.match_id = match_id
 
-    def OnInit(self):
-        # create frame here
-        frame = MainFrame()
-        frame.Show()
-        return True
+    def SetPlayerList(self, player_list):
+        self.player_list = player_list
+
+    def SetRefereeList(self, referee_list):
+        self.referee_list = referee_list
+
+    def StartMatch(self):
+        pass
+    def CalcScore(self, event):
+        index = self.select_player.GetSelection()
+        if index == wx.NOT_FOUND:
+            wx.MessageBox(u"请选择一名选手")
+            return
+        difficulty =self.difficulty_text.GetValue().strip()
+        if difficulty == "":
+            wx.MessageBox(u"请指定此跳的难度系数")
+            return
+        try:
+            difficulty = float(difficulty)
+        except:
+            wx.MessageBox(u"请输入正确的难度系数")
+            return
+        else:
+            if difficulty < 1.0 or difficulty > 4.8:
+                wx.MessageBox(u"难度系数应该在2.0~3.6之前")
+                return
+        score_list = []
+        for i in self.s_text_list:
+            temp_score = i.GetValue().strip()
+            if temp_score == "":
+                wx.MessageBox(u"七名裁判必须都给出打分")
+                return
+            else:
+                try:
+                    temp_score = float(temp_score)
+                except:
+                    wx.MessageBox(u"七名裁判必须都给出正确打分")
+                    return
+                else:
+                    if temp_score < 0.0 and temp_score > 10.0:
+                        wx.MessageBox(u"得分只能在0.0~10.0之间")
+                        return
+                    score_list.append(temp_score)
+        if len(score_list) == 7:
+            res = calculate_score(
+                {
+                    "score_list":score_list,
+                    "difficulty":difficulty,
+                }
+            )
+            self.round_score.SetLabel(res['expression'])
+
+    def load_show_data(self):
+        self.select_player.Clear()
+        for p in self.player_list:
+            player_info = get_player_by_id(p)
+            self.select_player.Append(player_info.name, player_info.id)
+        index = 0
+        for r in self.referee_list:
+            referee_info = get_referee_by_id(r)
+            self.s_label_list[index].SetLabel(referee_info.name)
+            index += 1
+        self.result_data_olv.ClearAll()
+        del self.result_data[:]
+        #开始构造填充objectlistview的数据对象
+        for p in self.player_list:
+            player_info = get_player_by_id(p)
+            score_list_per_round = get_player_all_rounds_score_list(self.match_id, p)
+            total_score = 0.0
+            for i in score_list_per_round:
+                if i != None:
+                    total_score += i
+            obj = ResultColumnData(
+                player_info.id,
+                player_info.name,
+                get_show_score(score_list_per_round[0]),
+                get_show_score(score_list_per_round[1]),
+                get_show_score(score_list_per_round[2]),
+                get_show_score(score_list_per_round[3]),
+                get_show_score(score_list_per_round[4]),
+                get_show_score(score_list_per_round[5]),
+                total_score
+            )
+            self.result_data.append(obj)
+        self.result_data_olv.SetObjects(self.result_data)
+
+    def format_result_data(self):
+        pass
+
+class GenApp(wx.App):
+        def __init__(self, redirect=False, filename=None):
+            wx.App.__init__(self, redirect, filename)
+
+        def OnInit(self):
+            # create frame here
+            frame = MainFrame()
+            frame.Show()
+            return True
 
 def main():
     """

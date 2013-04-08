@@ -2,7 +2,7 @@ __author__ = 'Administrator'
 #coding:utf-8
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from model import Match, Player, Referee, Score
+from model import Match, Player, Referee, Score, MatchParticipator
 from sqlalchemy import desc, asc
 from sqlalchemy import func
 
@@ -147,6 +147,18 @@ def add_match(match_name):
     match.name = match_name
     session.add(match)
     session.commit()
+    match_id = match.id
+    session.close()
+    return match_id
+
+def add_match_participator(match_id, p_id, p_type):
+    session = connectToDatabase()
+    p = MatchParticipator()
+    p.match_id = match_id
+    p.participator_id = p_id
+    p.participator_type = p_type
+    session.add(p)
+    session.commit()
     session.close()
 
 def get_all_matches():
@@ -199,7 +211,7 @@ def get_single_match_score(match_id, player_id):
 
 def get_player_all_rounds_score_list(match_id, player_id):
     """
-    获取某个选手在某场比赛中的得分列表（按轮次顺序排序的）
+    获取某个选手在某场比赛中的得分列表（按轮次顺序排序的）,没有成绩的填充None
     """
     session = connectToDatabase()
     qry = session.query(Score).filter(Score.match_id == match_id).filter(Score.player_id == player_id).order_by(asc(Score.round))
@@ -207,5 +219,25 @@ def get_player_all_rounds_score_list(match_id, player_id):
     score_list = []
     for i in qry:
         score_list.append(i.r_score)
+    for i in xrange(6 - len(score_list)):
+        score_list.append(None)
     return score_list
+
+def get_player_total_round(match_id, player_id):
+    session = connectToDatabase()
+    qry = session.query(func.count(Score)).filter(Score.match_id == match_id).filter(Score.player_id == player_id)
+    session.close()
+    return qry
+
+def get_player_by_id(player_id):
+    session = connectToDatabase()
+    qry = session.query(Player).filter(Player.id == player_id).one()
+    session.close()
+    return qry
+
+def get_referee_by_id(referee_id):
+    session = connectToDatabase()
+    qry = session.query(Referee).filter(Referee.id == referee_id).one()
+    session.close()
+    return qry
 

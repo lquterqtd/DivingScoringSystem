@@ -18,12 +18,14 @@ def calculate_score(calculation_params):
         res['expression'] += "%.1f + " % i
     res['final_score'] = temp_sum * difficulty
     res['expression'] = res['expression'][:-3]
-    res['expression'] += ') * %.1f = %.2f' % (difficulty, res['final_score'])
+    res['expression'] += ') * %.1f = %.1f' % (difficulty, res['final_score'])
     return res
 
-calculation_params = {
-    "score_list" : [1.0, 5.0, 3.0, 2.0, 9.0, 10.0, 2.0],
-    "difficulty" : 3.6,
-}
 
-print calculate_score(calculation_params)
+if __name__ == "__main__":
+    calculation_params = {
+        "score_list" : [1.0, 5.0, 3.0, 2.0, 9.0, 10.0, 2.0],
+        "difficulty" : 3.6,
+    }
+
+    print calculate_score(calculation_params)
