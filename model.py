@@ -62,4 +62,15 @@ class Score(Base):
     player = relationship("Player", backref=backref("scores", order_by=id))
     r_score = Column(Float(precision=1))
 
+class MatchParticipator(Base):
+    """
+    此表用来记录每场比赛的参与人员，包括选手与裁判
+    """
+    __tablename__ = "matchparticipators"
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey("matches.id"))
+    match = relationship("Match", backref=backref("matchparticipators", order_by=id))
+    participator_id = Column(Integer)
+    participator_type = Column(Enum(u'player', u'referee'))
+
 Base.metadata.create_all(engine)
