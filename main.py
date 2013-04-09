@@ -45,7 +45,7 @@ class MainFrame(wx.Frame):
         start_menu = wx.Menu()
         new_match = start_menu.Append(-1, u"开始一场新的比赛\tCtrl-N")
         self.Bind(wx.EVT_MENU, self.OnNewMatch, new_match)
-        open_match = start_menu.Append(-1, u"打开已经有比赛\tCtrl-O")
+        open_match = start_menu.Append(-1, u"打开已有比赛\tCtrl-O")
         self.Bind(wx.EVT_MENU, self.OnOpenMatch, open_match)
         menuBar.Append(start_menu, u"开始")
 
