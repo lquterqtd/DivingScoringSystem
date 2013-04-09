@@ -1,9 +1,10 @@
 __author__ = 'Administrator'
 #coding:utf-8
 import wx
-from controller import get_all_referees, get_all_players
+from controller import get_all_referees, get_all_players, get_all_matches
 from ObjectListView import ObjectListView, ColumnDefn
-from controller import add_match, add_match_participator
+from controller import add_match, add_match_participator, add_match_participator_list
+from model import MatchParticipator
 
 class RefereesColumnData(object):
     def __init__(self, id, name, sex, age):
@@ -18,6 +19,12 @@ class PlayersColumnData(object):
         self.name = name
         self.sex = sex
         self.age = age
+
+class MatchInfoColumnData(object):
+    def __init__(self, id, name, c_time):
+        self.id = id
+        self.name = name
+        self.c_time = c_time.strftime('%Y-%m-%d %H:%M:%S')
 
 class AddMatchDialog(wx.Dialog):
     def __init__(self, main_frame):
@@ -87,11 +94,22 @@ class AddMatchDialog(wx.Dialog):
         match_id = add_match(match_name)
         self.main_frame.SetMatchId(match_id)
 
-        for r in referee_list:
-            add_match_participator(match_id, r, u'referee')
+        p_list = []
+        for r_id in referee_list:
+            mp = MatchParticipator()
+            mp.match_id = self.main_frame.match_id
+            mp.participator_id = r_id
+            mp.participator_type = u'referee'
+            p_list.append(mp)
+        add_match_participator_list(p_list)
 
-        for p in player_list:
-            add_match_participator(match_id, p, u'player')
+        for p_id in player_list:
+            mp = MatchParticipator()
+            mp.match_id = self.main_frame.match_id
+            mp.participator_id = p_id
+            mp.participator_type = u'player'
+            p_list.append(mp)
+        add_match_participator_list(p_list)
 
         self.main_frame.SetRefereeList(referee_list)
         self.main_frame.SetPlayerList(player_list)
@@ -103,3 +121,40 @@ class OpenMatchDialog(wx.Dialog):
     def __init__(self, main_frame):
         wx.Dialog.__init__(self, None, -1, u"打开一场已有的比赛", size=(540, 400))
         self.main_frame = main_frame
+
+        self.all_match = get_all_matches()
+        self.match_list_data = []
+        for i in self.all_match:
+            self.match_list_data.append(MatchInfoColumnData(i.id, i.name, i.create_time))
+        self.match_list_data.reverse()
+        wx.StaticBox(self, -1, u"请选择要打开的比赛", size=(510, 350), pos=(10, 10))
+        self.match_list = ObjectListView(self, style=wx.LC_REPORT|wx.SUNKEN_BORDER, size=(480, 270), pos=(25, 35))
+        self.match_list.SetColumns(
+            [
+                ColumnDefn(u"比赛名称", 'centre', 240, "name"),
+                ColumnDefn(u"创建时间", 'centre', 195, "c_time"),
+            ]
+        )
+        self.match_list.CreateCheckStateColumn()
+        self.match_list.SetObjects(self.match_list_data)
+
+        self.open_btn = wx.Button(self, -1, u"打开", pos=(225, 320))
+        self.Bind(wx.EVT_BUTTON, self.OnOpenMatch, self.open_btn)
+
+    def OnOpenMatch(self, event):
+        selected_list = []
+        for obj in self.match_list.GetObjects():
+            if self.match_list.IsChecked(obj):
+                selected_list.append(obj)
+        if len(selected_list) == 0:
+            wx.MessageBox(u"你需要选择一场比赛")
+            return
+        elif len(selected_list) != 1:
+            wx.MessageBox(u"你只能选择一场比赛")
+            return
+        self.main_frame.match_id = selected_list[0].id
+        from controller import get_all_player_id_list, get_all_referee_id_list, get_participator_by_match
+        self.main_frame.SetPlayerList(get_participator_by_match(self.main_frame.match_id, u'player'))
+        self.main_frame.SetRefereeList(get_participator_by_match(self.main_frame.match_id, u'referee'))
+        self.main_frame.load_show_data()
+        self.Destroy()

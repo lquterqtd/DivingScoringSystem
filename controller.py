@@ -132,7 +132,7 @@ def connectToDatabase():
     """
     Connect to our SQLite database and return a Session object
     """
-    engine = create_engine("sqlite:///mydata.db", echo=True)
+    engine = create_engine(u"sqlite:///mydata.db", echo=True)
     Session = sessionmaker(bind=engine)
     session = Session()
     return session
@@ -161,6 +161,13 @@ def add_match_participator(match_id, p_id, p_type):
     session.commit()
     session.close()
 
+def add_match_participator_list(participator_list):
+    session = connectToDatabase()
+    for p in participator_list:
+        session.add(p)
+    session.commit()
+    session.close()
+
 def get_all_matches():
     """
     获取所有比赛列表
@@ -179,6 +186,13 @@ def get_all_players():
     session.close()
     return qry
 
+def get_all_player_id_list():
+    players_list = get_all_players()
+    all_player_id_list = []
+    for i in players_list:
+        all_player_id_list.append(i.id)
+    return all_player_id_list
+
 def get_all_referees():
     """
     获取所有裁判列表
@@ -187,6 +201,14 @@ def get_all_referees():
     qry = session.query(Referee).order_by(Referee.name).all()
     session.close()
     return qry
+
+def get_all_referee_id_list():
+    referees_list = get_all_referees()
+    all_referee_id_list = []
+    for i in referees_list:
+        all_referee_id_list.append(i.id)
+    return all_referee_id_list
+
 
 def get_single_round_score(match_id, player_id, round):
     """
@@ -258,5 +280,11 @@ def add_player_score(match_id, c_round, player_id, r_score):
     session.commit()
     session.close()
 
-
-
+def get_participator_by_match(match_id, p_type):
+    session = connectToDatabase()
+    qry = session.query(MatchParticipator).filter(MatchParticipator.match_id == match_id).filter(MatchParticipator.participator_type == p_type).all()
+    p_list = []
+    for i in qry:
+        p_list.append(i.participator_id)
+    session.close()
+    return p_list

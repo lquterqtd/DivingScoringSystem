@@ -33,7 +33,7 @@ class MainPanel(wx.Panel):
 class MainFrame(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, parent=None, id=wx.ID_ANY,
-            title=u"跳水打分系统", size=(800,600))
+            title=u"跳水打分系统", size=(800,600), style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.MINIMIZE_BOX)
         self.panel = MainPanel(self)
         self.icon = wx.Icon('diving.ico', wx.BITMAP_TYPE_ICO)
         self.SetIcon(self.icon)
