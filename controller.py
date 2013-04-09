@@ -151,6 +151,28 @@ def add_match(match_name):
     session.close()
     return match_id
 
+def add_player(player_name, player_sex, player_age, player_desc):
+    session = connectToDatabase()
+    player = Player()
+    player.name = player_name
+    player.sex = player_sex
+    player.age = player_age
+    player.desc = player_desc
+    session.add(player)
+    session.commit()
+    session.close()
+
+def add_referee(referee_name, referee_sex, referee_age, referee_desc):
+    session = connectToDatabase()
+    referee = Referee()
+    referee.name = referee_name
+    referee.sex = referee_sex
+    referee.age = referee_age
+    referee.desc = referee_desc
+    session.add(referee)
+    session.commit()
+    session.close()
+
 def add_match_participator(match_id, p_id, p_type):
     session = connectToDatabase()
     p = MatchParticipator()
@@ -288,3 +310,6 @@ def get_participator_by_match(match_id, p_type):
         p_list.append(i.participator_id)
     session.close()
     return p_list
+
+if __name__ == '__main__':
+    add_test_data()

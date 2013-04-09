@@ -1,7 +1,7 @@
 __author__ = 'Administrator'
 #coding:utf-8
 import wx
-from mydialog import AddMatchDialog, OpenMatchDialog
+from mydialog import AddMatchDialog, OpenMatchDialog, AddPlayerDialog, AddRefereeDialog
 from calculate_score import calculate_score
 from ObjectListView import ObjectListView, ColumnDefn
 from controller import get_player_by_id, get_referee_by_id, get_player_all_rounds_score_list, get_player_total_round, add_player_score
@@ -48,6 +48,14 @@ class MainFrame(wx.Frame):
         open_match = start_menu.Append(-1, u"打开已经有比赛\tCtrl-O")
         self.Bind(wx.EVT_MENU, self.OnOpenMatch, open_match)
         menuBar.Append(start_menu, u"开始")
+
+        add_menu = wx.Menu()
+        add_player = add_menu.Append(-1, u"添加选手到选手库")
+        self.Bind(wx.EVT_MENU, self.OnAddPlayer, add_player)
+        add_referee = add_menu.Append(-1, u"添加裁判到裁判库")
+        self.Bind(wx.EVT_MENU, self.OnAddReferee, add_referee)
+        menuBar.Append(add_menu, u"添加")
+
         help_menu = wx.Menu()
         about = help_menu.Append(-1, u"关于")
         menuBar.Append(help_menu, u"帮助")
@@ -228,6 +236,16 @@ class MainFrame(wx.Frame):
             self.result_data_listview.SetStringItem(index, 5, obj.s_5)
             self.result_data_listview.SetStringItem(index, 6, obj.s_6)
             self.result_data_listview.SetStringItem(index, 7, obj.s_total)
+
+    def OnAddPlayer(self, event):
+        dlg = AddPlayerDialog(self)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def OnAddReferee(self, event):
+        dlg = AddRefereeDialog(self)
+        dlg.ShowModal()
+        dlg.Destroy()
 
 class GenApp(wx.App):
         def __init__(self, redirect=False, filename=None):

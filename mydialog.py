@@ -1,7 +1,7 @@
 __author__ = 'Administrator'
 #coding:utf-8
 import wx
-from controller import get_all_referees, get_all_players, get_all_matches
+from controller import get_all_referees, get_all_players, get_all_matches, add_player, add_referee
 from ObjectListView import ObjectListView, ColumnDefn
 from controller import add_match, add_match_participator, add_match_participator_list
 from model import MatchParticipator
@@ -157,4 +157,93 @@ class OpenMatchDialog(wx.Dialog):
         self.main_frame.SetPlayerList(get_participator_by_match(self.main_frame.match_id, u'player'))
         self.main_frame.SetRefereeList(get_participator_by_match(self.main_frame.match_id, u'referee'))
         self.main_frame.load_show_data()
+        self.Destroy()
+
+
+class AddPlayerDialog(wx.Dialog):
+    def __init__(self, main_frame):
+        wx.Dialog.__init__(self, None, -1, u"添加一位选手到选手库中", size=(350, 350))
+        self.main_frame = main_frame
+
+        static_box = wx.StaticBox(self, -1, u"请填写选手信息", size=(320, 300), pos=(10, 10))
+        name_label = wx.StaticText(self, -1, u"姓名", pos=(20, 50))
+        self.name_text = wx.TextCtrl(self, -1, pos=(90, 50))
+        sex_label = wx.StaticText(self, -1, u"性别", pos=(20, 90))
+        self.sex_select = wx.Choice(self, -1, pos=(90, 90))
+        self.sex_select.Append(u"男", u"Male")
+        self.sex_select.Append(u"女", u"Female")
+        age_label = wx.StaticText(self, -1, u"年龄", pos=(20, 130))
+        self.age_text = wx.TextCtrl(self, -1, pos=(90, 130))
+        desc_label = wx.StaticText(self, -1, u"介绍", pos=(20, 170))
+        self.desc_text = wx.TextCtrl(self, -1, size=(200, 75), pos=(90, 170))
+        self.add_btn = wx.Button(self, -1, u"添加", pos=(140, 270))
+        self.Bind(wx.EVT_BUTTON, self.OnAddPlayer, self.add_btn)
+
+    def OnAddPlayer(self, event):
+        name = self.name_text.GetValue().strip()
+        if len(name) == 0:
+            wx.MessageBox(u"姓名不能为空")
+            return
+        if self.sex_select.GetSelection() == wx.NOT_FOUND:
+            wx.MessageBox(u"请选择性别")
+            return
+        age = self.age_text.GetValue().strip()
+        if len(age) == 0:
+            wx.MessageBox(u"请输入年龄")
+            return
+        try:
+            age = int(age)
+        except:
+            wx.MessageBox(u"请输入正确的年龄")
+            return
+        else:
+            if age <= 0:
+                wx.MessageBox(u"请输入正确的年龄")
+                return
+        add_player(name, self.sex_select.GetClientData(self.sex_select.GetSelection()), age, self.desc_text.GetValue())
+        wx.MessageBox(u"添加成功，你可以创建一场比赛并加入该选手")
+        self.Destroy()
+
+class AddRefereeDialog(wx.Dialog):
+    def __init__(self, main_frame):
+        wx.Dialog.__init__(self, None, -1, u"添加一位裁判到裁判库中", size=(350, 350))
+        self.main_frame = main_frame
+
+        static_box = wx.StaticBox(self, -1, u"请填写裁判信息", size=(320, 300), pos=(10, 10))
+        name_label = wx.StaticText(self, -1, u"姓名", pos=(20, 50))
+        self.name_text = wx.TextCtrl(self, -1, pos=(90, 50))
+        sex_label = wx.StaticText(self, -1, u"性别", pos=(20, 90))
+        self.sex_select = wx.Choice(self, -1, pos=(90, 90))
+        self.sex_select.Append(u"男", u"Male")
+        self.sex_select.Append(u"女", u"Female")
+        age_label = wx.StaticText(self, -1, u"年龄", pos=(20, 130))
+        self.age_text = wx.TextCtrl(self, -1, pos=(90, 130))
+        desc_label = wx.StaticText(self, -1, u"介绍", pos=(20, 170))
+        self.desc_text = wx.TextCtrl(self, -1, size=(200, 75), pos=(90, 170))
+        self.add_btn = wx.Button(self, -1, u"添加", pos=(140, 270))
+        self.Bind(wx.EVT_BUTTON, self.OnAddPlayer, self.add_btn)
+
+    def OnAddPlayer(self, event):
+        name = self.name_text.GetValue().strip()
+        if len(name) == 0:
+            wx.MessageBox(u"姓名不能为空")
+            return
+        if self.sex_select.GetSelection() == wx.NOT_FOUND:
+            wx.MessageBox(u"请选择性别")
+            return
+        age = self.age_text.GetValue().strip()
+        if len(age) == 0:
+            wx.MessageBox(u"请输入年龄")
+            return
+        try:
+            age = int(age)
+        except:
+            wx.MessageBox(u"请输入正确的年龄")
+            return
+        else:
+            if age <= 0:
+                wx.MessageBox(u"请输入正确的年龄")
+                return
+        add_referee(name, self.sex_select.GetClientData(self.sex_select.GetSelection()), age, self.desc_text.GetValue())
+        wx.MessageBox(u"添加成功，你可以创建一场比赛并加入该裁判")
         self.Destroy()
